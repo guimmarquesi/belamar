@@ -17,6 +17,7 @@ import {
   createCampaign as createCampaignRow,
   fetchMembers,
   fetchMyCampaigns,
+  joinOpenCampaign as joinOpenCampaignRow,
 } from "@/lib/campaign-data";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -40,6 +41,7 @@ type CampaignValue = {
   pendingInvite: string | null;
   createCampaign: (name?: string) => Promise<void>;
   joinWithInvite: (token: string) => Promise<void>;
+  joinOpenCampaign: (campaignId: string, role: "master" | "player", characterIds: string[]) => Promise<void>;
   selectCampaign: (id: string) => void;
   refresh: () => Promise<void>;
 };
@@ -186,6 +188,20 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     [load],
   );
 
+  const joinOpenCampaign = useCallback(
+    async (campaignId: string, role: "master" | "player", characterIds: string[]) => {
+      setError(null);
+      try {
+        const joinedId = await joinOpenCampaignRow({ campaignId, role, characterIds });
+        await load(joinedId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível entrar na campanha.");
+        throw err;
+      }
+    },
+    [load],
+  );
+
   const value = useMemo<CampaignValue>(() => {
     const active = campaigns.find((c) => c.campaign.id === activeId) ?? null;
     return {
@@ -200,6 +216,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       pendingInvite,
       createCampaign,
       joinWithInvite,
+      joinOpenCampaign,
       selectCampaign: setActiveId,
       refresh: async () => {
         await load();
@@ -214,6 +231,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     pendingInvite,
     createCampaign,
     joinWithInvite,
+    joinOpenCampaign,
     load,
   ]);
 

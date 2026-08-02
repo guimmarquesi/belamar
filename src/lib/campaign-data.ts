@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import type { CampaignInviteRow, CampaignRow, Json, MemberRole } from "./database.types";
+import type { CampaignInviteRow, CampaignRow, CharacterRow, Json, MemberRole } from "./database.types";
 import { loadQuests, saveQuests, type Quest } from "./quests-store";
 import { loadPotions, savePotions, type Potion } from "./potions-store";
 import { loadBag, saveBag, loadCoins, saveCoins, type BagItem, type Coins } from "./bag-store";
@@ -577,6 +577,48 @@ export async function fetchMyCampaigns(userId: string): Promise<{ campaign: Camp
     const campaign = byId.get(membership.campaign_id);
     return campaign ? [{ campaign, role: membership.role }] : [];
   });
+}
+
+export type OpenCampaignCharacter = Pick<CharacterRow, "id" | "name" | "owner_id" | "data">;
+
+export async function fetchOpenCampaigns(): Promise<
+  { campaign: CampaignRow; characters: OpenCampaignCharacter[] }[]
+> {
+  const { data: campaigns, error } = await db
+    .from("campaigns")
+    .select("*")
+    .eq("is_open", true)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  const rows = (campaigns ?? []) as CampaignRow[];
+  if (!rows.length) return [];
+  const { data: characters, error: characterError } = await db
+    .from("characters")
+    .select("id,name,owner_id,data,campaign_id")
+    .in("campaign_id", rows.map((campaign) => campaign.id))
+    .order("created_at", { ascending: true });
+  if (characterError) throw characterError;
+
+  const characterRows = (characters ?? []) as (OpenCampaignCharacter & { campaign_id: string })[];
+  return rows.map((campaign) => ({
+    campaign,
+    characters: characterRows.filter((character) => character.campaign_id === campaign.id),
+  }));
+}
+
+export async function joinOpenCampaign(options: {
+  campaignId: string;
+  role: Extract<MemberRole, "master" | "player">;
+  characterIds: string[];
+}): Promise<string> {
+  const { data, error } = await db.rpc("join_open_campaign", {
+    target_campaign: options.campaignId,
+    selected_role: options.role,
+    selected_characters: options.characterIds,
+  });
+  if (error) throw error;
+  return String(data);
 }
 
 export async function fetchMembers(campaignId: string) {

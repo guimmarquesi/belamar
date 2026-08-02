@@ -23,6 +23,7 @@ export type CampaignRow = {
   name: string;
   slug: string;
   owner_id: string;
+  is_open: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -179,7 +180,7 @@ export type Database = {
       profiles: Table<ProfileRow, { id: string; display_name: string; avatar_url?: string | null }>;
       campaigns: Table<
         CampaignRow,
-        { id?: string; name: string; slug: string; owner_id: string; created_at?: string; updated_at?: string }
+        { id?: string; name: string; slug: string; owner_id: string; is_open?: boolean; created_at?: string; updated_at?: string }
       >;
       campaign_members: Table<CampaignMemberRow>;
       characters: Table<CharacterRow>;
@@ -229,6 +230,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      join_open_campaign: {
+        Args: { target_campaign: string; selected_role: MemberRole; selected_characters?: string[] };
+        Returns: string;
+      };
       accept_campaign_invite: {
         Args: { invite_token: string };
         Returns: string;

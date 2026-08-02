@@ -18,7 +18,8 @@ import parchmentImg from "@/assets/parchment.jpg";
 import { AuthScreen } from "@/components/AuthScreen";
 import { useAuth } from "@/lib/auth-context";
 import { useCampaign } from "@/lib/campaign-context";
-import { createInvite } from "@/lib/campaign-data";
+import { createInvite, fetchOpenCampaigns, type OpenCampaignCharacter } from "@/lib/campaign-data";
+import { PARTY } from "@/lib/party";
 import {
   hasLegacyData,
   isMigrated,
@@ -49,27 +50,41 @@ function FullscreenLoading({ label = "Abrindo a crônica..." }: { label?: string
 }
 
 function CampaignOnboarding() {
-  const { pendingInvite, joinWithInvite, createCampaign, error } = useCampaign();
-  const [name, setName] = useState("Belamar");
-  const [token, setToken] = useState(pendingInvite ?? "");
-  const [busy, setBusy] = useState<"create" | "join" | null>(null);
+  const { joinOpenCampaign, error } = useCampaign();
+  const [campaign, setCampaign] = useState<Awaited<ReturnType<typeof fetchOpenCampaigns>>[number] | null>(null);
+  const [role, setRole] = useState<"master" | "player">("player");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (pendingInvite) setToken(pendingInvite);
-  }, [pendingInvite]);
+    let alive = true;
+    void fetchOpenCampaigns()
+      .then((rows) => { if (alive) setCampaign(rows[0] ?? null); })
+      .catch((cause) => { if (alive) setLocalError(cause instanceof Error ? cause.message : "Não foi possível abrir a campanha."); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
 
-  const run = async (kind: "create" | "join") => {
-    setBusy(kind);
+  const run = async () => {
+    if (!campaign) return;
+    setBusy(true);
     setLocalError(null);
     try {
-      if (kind === "create") await createCampaign(name.trim() || "Belamar");
-      else await joinWithInvite(token.trim());
+      await joinOpenCampaign(campaign.campaign.id, role, selected);
     } catch (cause) {
-      setLocalError(cause instanceof Error ? cause.message : "Não foi possível concluir.");
+      setLocalError(cause instanceof Error ? cause.message : "Não foi possível entrar.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
+  };
+
+  const guildaMember = (character: OpenCampaignCharacter) => {
+    const data = character.data && typeof character.data === "object" && !Array.isArray(character.data)
+      ? character.data as Record<string, unknown>
+      : {};
+    return PARTY.find((member) => member.id === data.guilda_id || member.name === character.name);
   };
 
   return (
@@ -87,58 +102,43 @@ function CampaignOnboarding() {
           boxShadow: "0 28px 70px oklch(0 0 0 / 0.72)",
         }}
       >
-        <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[0.24em]">SUA MESA</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[0.24em]">ENTRAR EM BELAMAR</h1>
         <p className="mt-1 font-[family-name:var(--font-script)] italic text-[var(--color-ink)]/70">
-          Crie a campanha ou use o convite enviado pelo Mestre.
+          Escolha como vai participar e vincule seus personagens da Guilda.
         </p>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <section className="rounded border border-[var(--color-ink)]/20 bg-[oklch(0.96_0.04_80)]/45 p-4">
-            <div className="flex items-center gap-2">
-              <Shield className="size-4" />
-              <h2 className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.22em]">
-                Criar campanha
-              </h2>
-            </div>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="mt-4 w-full rounded border border-[var(--color-ink)]/20 bg-[oklch(0.98_0.02_80)] px-3 py-2 text-sm outline-none"
-              placeholder="Nome da campanha"
-            />
-            <button
-              onClick={() => void run("create")}
-              disabled={busy !== null}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 py-2 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.22em] text-[oklch(0.96_0.04_80)] disabled:opacity-50"
-            >
-              {busy === "create" ? <Loader2 className="size-3.5 animate-spin" /> : <DoorOpen className="size-3.5" />}
-              Criar como Mestre
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          {(["player", "master"] as const).map((option) => (
+            <button key={option} onClick={() => setRole(option)} className={`rounded border p-4 text-left transition ${role === option ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-[oklch(0.96_0.04_80)]" : "border-[var(--color-ink)]/20 bg-[oklch(0.96_0.04_80)]/45"}`}>
+              <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.2em]">
+                {option === "master" ? <Shield className="size-4" /> : <Users className="size-4" />}
+                {option === "master" ? "Sou Mestre" : "Sou Jogador"}
+              </span>
+              <span className="mt-2 block text-xs opacity-70">{option === "master" ? "Pode ajudar a editar a campanha." : "Participa com seus personagens."}</span>
             </button>
-          </section>
-
-          <section className="rounded border border-[var(--color-ink)]/20 bg-[oklch(0.96_0.04_80)]/45 p-4">
-            <div className="flex items-center gap-2">
-              <UserPlus className="size-4" />
-              <h2 className="font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.22em]">
-                Entrar com convite
-              </h2>
-            </div>
-            <input
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              className="mt-4 w-full rounded border border-[var(--color-ink)]/20 bg-[oklch(0.98_0.02_80)] px-3 py-2 text-sm outline-none"
-              placeholder="Cole o código ou token"
-            />
-            <button
-              onClick={() => void run("join")}
-              disabled={busy !== null || !token.trim()}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded border border-[var(--color-ink)]/35 px-3 py-2 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.22em] disabled:opacity-50"
-            >
-              {busy === "join" ? <Loader2 className="size-3.5 animate-spin" /> : <Users className="size-3.5" />}
-              Entrar na campanha
-            </button>
-          </section>
+          ))}
         </div>
+
+        <p className="mt-5 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.2em]">Meus personagens (pode escolher mais de um)</p>
+        {loading ? <div className="mt-4 flex items-center gap-2 text-sm"><Loader2 className="size-4 animate-spin" /> Abrindo a Guilda...</div> : (
+          <div className="mt-3 grid max-h-60 gap-2 overflow-auto sm:grid-cols-2">
+            {campaign?.characters.map((character) => {
+              const member = guildaMember(character);
+              const unavailable = Boolean(character.owner_id);
+              const checked = selected.includes(character.id);
+              return <button key={character.id} type="button" disabled={unavailable} onClick={() => setSelected((current) => checked ? current.filter((id) => id !== character.id) : [...current, character.id])} className={`flex items-center gap-3 rounded border p-2 text-left ${checked ? "border-[var(--color-ink)] bg-[var(--color-ink)]/10" : "border-[var(--color-ink)]/20"} disabled:opacity-45`}>
+                {member?.portrait ? <img src={member.portrait} alt="" className="size-10 rounded-full object-cover" /> : <span className="flex size-10 items-center justify-center rounded-full bg-black/10">{character.name[0]}</span>}
+                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{character.name}</strong><small className="block truncate opacity-60">{unavailable ? "Já vinculado" : member?.classLine ?? "Guilda"}</small></span>
+                {checked && <Check className="size-4" />}
+              </button>;
+            })}
+          </div>
+        )}
+
+        <button onClick={() => void run()} disabled={busy || loading || !campaign} className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 py-3 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.22em] text-[oklch(0.96_0.04_80)] disabled:opacity-50">
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <DoorOpen className="size-3.5" />}
+          Entrar como {role === "master" ? "Mestre" : "Jogador"}
+        </button>
 
         {(localError || error) && (
           <p className="mt-4 rounded border border-red-900/25 bg-red-900/10 px-3 py-2 text-sm text-red-950">
