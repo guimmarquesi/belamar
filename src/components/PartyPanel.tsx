@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { PARTY, type PartyMember } from "@/lib/party";
+import { useCampaign } from "@/lib/campaign-context";
+import { useDocument } from "@/lib/campaign-data";
 
 const NOTES_KEY = "belamar.notes";
 const GOALS_KEY = "belamar.party-goals";
@@ -16,38 +18,24 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
-function saveJson(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 export function PartyPanel() {
+  const { campaignId } = useCampaign();
   const [selected, setSelected] = useState<PartyMember | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [goals, setGoals] = useState<string>("");
-  const [status, setStatus] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setNotes(loadJson(NOTES_KEY, {} as Record<string, string>));
-    setGoals(loadJson(GOALS_KEY, ""));
-    setStatus(loadJson(STATUS_KEY, {} as Record<string, string>));
-  }, []);
+  const notes = useDocument(campaignId, "guilda.notes", loadJson(NOTES_KEY, {} as Record<string, string>));
+  const goals = useDocument<string>(campaignId, "guilda.goals", loadJson<string>(GOALS_KEY, ""));
+  const status = useDocument(campaignId, "guilda.status", loadJson(STATUS_KEY, {} as Record<string, string>));
 
   if (selected) {
     return (
       <MemberDetail
         member={selected}
-        note={notes[selected.id] ?? ""}
-        status={status[selected.id] ?? ""}
+        note={notes.value[selected.id] ?? ""}
+        status={status.value[selected.id] ?? ""}
         onChange={(value) => {
-          const next = { ...notes, [selected.id]: value };
-          setNotes(next);
-          saveJson(NOTES_KEY, next);
+          notes.persist({ ...notes.value, [selected.id]: value });
         }}
         onStatusChange={(value) => {
-          const next = { ...status, [selected.id]: value };
-          setStatus(next);
-          saveJson(STATUS_KEY, next);
+          status.persist({ ...status.value, [selected.id]: value });
         }}
         onBack={() => setSelected(null)}
       />
@@ -66,15 +54,12 @@ export function PartyPanel() {
             Objetivos do grupo
           </p>
           <span className="font-[family-name:var(--font-script)] text-[11px] italic text-[var(--color-ink)]/45">
-            salvo localmente
+            sincronizado com a campanha
           </span>
         </div>
         <textarea
-          value={goals}
-          onChange={(e) => {
-            setGoals(e.target.value);
-            saveJson(GOALS_KEY, e.target.value);
-          }}
+          value={goals.value}
+          onChange={(e) => goals.persist(e.target.value)}
           placeholder="O que a companhia persegue agora?…"
           className="min-h-[90px] w-full resize-none rounded border border-[var(--color-ink)]/20 bg-[oklch(0.96_0.04_80)]/50 p-3 font-[family-name:var(--font-body)] text-[14.5px] leading-relaxed text-[var(--color-ink)] outline-none placeholder:italic placeholder:text-[var(--color-ink)]/40 focus:border-[var(--color-ink)]/50"
         />
@@ -84,7 +69,7 @@ export function PartyPanel() {
         title="Companhia"
         subtitle="os que se sentam à mesa"
         members={PARTY}
-        status={status}
+        status={status.value}
         onSelect={setSelected}
       />
 
@@ -365,7 +350,7 @@ function MemberDetail({
             Notas de Bandolim <Icon size={12} className="ml-1 inline-block opacity-60" />
           </p>
           <span className="font-[family-name:var(--font-script)] text-[11px] italic text-[var(--color-ink)]/45">
-            anotações salvas localmente
+            sincronizado com a campanha
           </span>
         </div>
         <textarea
