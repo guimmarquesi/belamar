@@ -621,6 +621,17 @@ export async function joinOpenCampaign(options: {
   return String(data);
 }
 
+export async function fetchCampaignCharacters(campaignId: string): Promise<OpenCampaignCharacter[]> {
+  const { data, error } = await db.from("characters").select("id,name,owner_id,data").eq("campaign_id", campaignId).order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as OpenCampaignCharacter[];
+}
+
+export async function setMyCharacters(campaignId: string, characterIds: string[]): Promise<void> {
+  const { error } = await db.rpc("set_my_characters", { target_campaign: campaignId, selected_characters: characterIds });
+  if (error) throw error;
+}
+
 export async function fetchMembers(campaignId: string) {
   const { data, error } = await db
     .from("campaign_members")

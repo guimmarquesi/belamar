@@ -18,7 +18,13 @@ import parchmentImg from "@/assets/parchment.jpg";
 import { AuthScreen } from "@/components/AuthScreen";
 import { useAuth } from "@/lib/auth-context";
 import { useCampaign } from "@/lib/campaign-context";
-import { createInvite, fetchOpenCampaigns, type OpenCampaignCharacter } from "@/lib/campaign-data";
+import {
+  createInvite,
+  fetchCampaignCharacters,
+  fetchOpenCampaigns,
+  setMyCharacters,
+  type OpenCampaignCharacter,
+} from "@/lib/campaign-data";
 import { PARTY } from "@/lib/party";
 import {
   hasLegacyData,
@@ -178,6 +184,41 @@ function AccountPanel() {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [characters, setCharacters] = useState<OpenCampaignCharacter[]>([]);
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
+  const [charactersBusy, setCharactersBusy] = useState(false);
+  const [charactersNotice, setCharactersNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !campaignId || !user) return;
+    let alive = true;
+    setCharactersBusy(true);
+    void fetchCampaignCharacters(campaignId)
+      .then((rows) => {
+        if (!alive) return;
+        setCharacters(rows);
+        setSelectedCharacters(rows.filter((character) => character.owner_id === user.id).map((character) => character.id));
+      })
+      .catch((cause) => { if (alive) setError(cause instanceof Error ? cause.message : "Não foi possível carregar os personagens."); })
+      .finally(() => { if (alive) setCharactersBusy(false); });
+    return () => { alive = false; };
+  }, [open, campaignId, user]);
+
+  const saveCharacters = async () => {
+    if (!campaignId) return;
+    setCharactersBusy(true);
+    setCharactersNotice(null);
+    setError(null);
+    try {
+      await setMyCharacters(campaignId, selectedCharacters);
+      setCharacters(await fetchCampaignCharacters(campaignId));
+      setCharactersNotice("Personagens vinculados à sua conta.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível vincular os personagens.");
+    } finally {
+      setCharactersBusy(false);
+    }
+  };
 
   const generate = async () => {
     if (!user || !campaignId) return;
@@ -263,6 +304,33 @@ function AccountPanel() {
             </ul>
           </div>
 
+          <div className="mt-4 rounded border border-[var(--color-ink)]/15 bg-[oklch(0.96_0.04_80)]/40 p-3">
+            <p className="font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.2em]">Meus personagens</p>
+            <p className="mt-1 text-[11px] opacity-60">Escolha um ou vários personagens da Guilda.</p>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {characters.map((character) => {
+                const unavailable = Boolean(character.owner_id && character.owner_id !== user?.id);
+                const checked = selectedCharacters.includes(character.id);
+                return (
+                  <label key={character.id} className={`flex items-center gap-2 rounded border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs ${unavailable ? "opacity-40" : "cursor-pointer"}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={unavailable || charactersBusy}
+                      onChange={() => setSelectedCharacters((current) => checked ? current.filter((id) => id !== character.id) : [...current, character.id])}
+                    />
+                    <span className="truncate">{character.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <button onClick={() => void saveCharacters()} disabled={charactersBusy} className="mt-2 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-2 py-1.5 text-[10px] uppercase text-[oklch(0.96_0.04_80)] disabled:opacity-50">
+              {charactersBusy && <Loader2 className="size-3 animate-spin" />} Salvar personagens
+            </button>
+            {charactersNotice && <p className="mt-2 text-xs text-emerald-900">{charactersNotice}</p>}
+            {error && <p className="mt-2 text-xs text-red-900">{error}</p>}
+          </div>
+
           {isMaster && (
             <div className="mt-4 border-t border-[var(--color-ink)]/15 pt-4">
               <p className="font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.2em]">Convidar para a mesa</p>
@@ -297,7 +365,6 @@ function AccountPanel() {
                   {copied ? "Link copiado" : "Copiar convite novamente"}
                 </button>
               )}
-              {error && <p className="mt-2 text-xs text-red-900">{error}</p>}
             </div>
           )}
 
