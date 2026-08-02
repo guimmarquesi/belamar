@@ -230,6 +230,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      set_my_characters: {
+        Args: { target_campaign: string; selected_characters?: string[] };
+        Returns: undefined;
+      };
       join_open_campaign: {
         Args: { target_campaign: string; selected_role: MemberRole; selected_characters?: string[] };
         Returns: string;
