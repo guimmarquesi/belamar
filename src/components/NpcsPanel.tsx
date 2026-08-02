@@ -31,20 +31,21 @@ function loadNpcs(): EditableNpc[] {
 }
 
 export function NpcsPanel() {
-  const { campaignId, isMaster } = useCampaign();
+  const { campaignId, role } = useCampaign();
+  const canEdit = role === "master" || role === "player";
   const { list: npcs, persist } = useSyncedNpcs(campaignId, loadNpcs);
   const [tab, setTab] = useState<NpcRelation>("aliado");
   const [selected, setSelected] = useState<EditableNpc | null>(null);
 
   const updateNpc = (id: string, patch: Partial<EditableNpc>) => {
-    if (!isMaster) return;
+    if (!canEdit) return;
     const next = npcs.map((npc) => (npc.id === id ? { ...npc, ...patch } : npc));
     persist(next);
     setSelected((current) => (current?.id === id ? { ...current, ...patch } : current));
   };
 
   const deleteNpc = (id: string) => {
-    if (!isMaster) return;
+    if (!canEdit) return;
     persist(npcs.filter((npc) => npc.id !== id));
     setSelected(null);
   };
@@ -61,7 +62,7 @@ export function NpcsPanel() {
       sigil: "N",
       accent: "oklch(0.62 0.09 70)",
     };
-    if (!isMaster) return;
+    if (!canEdit) return;
     persist([...npcs, npc]);
     setSelected(npc);
   };
@@ -73,7 +74,7 @@ export function NpcsPanel() {
         onBack={() => setSelected(null)}
         onChange={(patch) => updateNpc(selected.id, patch)}
         onDelete={() => deleteNpc(selected.id)}
-        canEdit={isMaster}
+        canEdit={canEdit}
       />
     );
   }
@@ -110,7 +111,7 @@ export function NpcsPanel() {
         })}
       </div>
 
-      {isMaster && (
+      {canEdit && (
         <button
           onClick={addNpc}
           className="group flex w-full items-center gap-4 rounded border border-dashed border-[var(--color-ink)]/25 bg-[oklch(0.96_0.04_80)]/25 p-4 text-left transition-all hover:border-[var(--color-ink)]/45 hover:bg-[oklch(0.96_0.04_80)]/50"
