@@ -103,7 +103,7 @@ export function MapDrawer({
   const customDocument = useDocument<CustomMarker[]>(
     campaignId,
     "map.custom-markers",
-    loadCustom(),
+    campaignId ? [] : loadCustom(),
   );
   const [active, setActive] = useState<Set<MarkerType>>(
     () => new Set(Object.keys(MARKER_META) as MarkerType[]),
