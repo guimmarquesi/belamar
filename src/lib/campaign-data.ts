@@ -398,7 +398,7 @@ export function useSyncedCoins(campaignId: string | null) {
   return { coins, persist, remote: Boolean(campaignId) };
 }
 
-export function useDocument<T extends Json>(campaignId: string | null, key: string, fallback: T) {
+export function useDocument<T>(campaignId: string | null, key: string, fallback: T) {
   const [value, setValue] = useState<T>(fallback);
 
   const reload = useCallback(async () => {
@@ -422,7 +422,7 @@ export function useDocument<T extends Json>(campaignId: string | null, key: stri
     async (next: T) => {
       if (!campaignId) return;
       const { error } = await db.from("campaign_documents").upsert(
-        { campaign_id: campaignId, key, value: next },
+        { campaign_id: campaignId, key, value: next as Json },
         { onConflict: "campaign_id,key" },
       );
       if (error) warn(`document:${key}:save`, error);

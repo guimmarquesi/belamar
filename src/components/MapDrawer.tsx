@@ -17,6 +17,8 @@ import parchmentImg from "@/assets/parchment.jpg";
 import { MAP_MARKERS, MARKER_META, type MapMarker, type MarkerType } from "@/lib/map";
 import { loadQuests, type Quest } from "@/lib/quests-store";
 import { loadStoredNpcs, type StoredNpc } from "@/lib/npcs-store";
+import { useCampaign } from "@/lib/campaign-context";
+import { useDocument } from "@/lib/campaign-data";
 
 const STORAGE_KEY = "belamar.custom-markers";
 const MIN_ZOOM = 1;
@@ -97,12 +99,18 @@ export function MapDrawer({
   onClose: () => void;
   focusMarkerId?: string | null;
 }) {
+  const { campaignId } = useCampaign();
+  const customDocument = useDocument<CustomMarker[]>(
+    campaignId,
+    "map.custom-markers",
+    loadCustom(),
+  );
   const [active, setActive] = useState<Set<MarkerType>>(
     () => new Set(Object.keys(MARKER_META) as MarkerType[]),
   );
   const [editing, setEditing] = useState<CustomMarker | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [custom, setCustom] = useState<CustomMarker[]>([]);
+  const custom = customDocument.value;
   const [placing, setPlacing] = useState<MarkerType | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
@@ -122,7 +130,6 @@ export function MapDrawer({
 
   useEffect(() => {
     if (open) {
-      setCustom(loadCustom());
       setQuests(loadQuests());
       setStoredNpcs(loadStoredNpcs());
     }
@@ -229,7 +236,7 @@ export function MapDrawer({
       custom: true,
     };
     const next = [...custom, marker];
-    setCustom(next);
+    customDocument.persist(next);
     saveCustom(next);
     setEditing(marker);
     setPlacing(null);
@@ -242,14 +249,14 @@ export function MapDrawer({
 
   const updateCustom = (id: string, patch: Partial<CustomMarker>) => {
     const next = custom.map((m) => (m.id === id ? { ...m, ...patch } : m));
-    setCustom(next);
+    customDocument.persist(next);
     saveCustom(next);
     setEditing((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
   };
 
   const deleteCustom = (id: string) => {
     const next = custom.filter((m) => m.id !== id);
-    setCustom(next);
+    customDocument.persist(next);
     saveCustom(next);
     setEditing(null);
   };
