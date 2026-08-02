@@ -1,0 +1,16 @@
+create index idx_activity_log_actor_id on public.activity_log(actor_id);
+create index idx_activity_log_campaign_id on public.activity_log(campaign_id);
+create index idx_activity_log_created_at on public.activity_log(campaign_id, created_at desc);
+create index idx_bag_items_campaign_id on public.bag_items(campaign_id);
+create index idx_bag_items_created_by on public.bag_items(created_by);
+create index idx_bag_items_owner_character_id on public.bag_items(owner_character_id);
+create index idx_campaign_members_user_id on public.campaign_members(user_id);
+create index idx_campaigns_owner_id on public.campaigns(owner_id);
+create index idx_characters_campaign_id on public.characters(campaign_id);
+create index idx_characters_owner_id on public.characters(owner_id);
+create index idx_items_campaign_id on public.items(campaign_id);
+create index idx_items_owner_character_id on public.items(owner_character_id);
+create index idx_map_markers_campaign_id on public.map_markers(campaign_id);
+create index idx_npcs_campaign_id on public.npcs(campaign_id);
+create index idx_potions_campaign_id on public.potions(campaign_id);
+create index idx_quests_campaign_id on public.quests(campaign_id);

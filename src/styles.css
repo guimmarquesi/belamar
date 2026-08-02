@@ -1,0 +1,332 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-parchment: var(--parchment);
+  --color-ink: var(--ink);
+  --color-ember: var(--ember);
+  --color-thread: var(--thread);
+  --color-brass: var(--brass);
+
+  --color-cat-group: var(--cat-group);
+  --color-cat-npcs: var(--cat-npcs);
+  --color-cat-factions: var(--cat-factions);
+  --color-cat-regions: var(--cat-regions);
+  --color-cat-quests: var(--cat-quests);
+  --color-cat-items: var(--cat-items);
+  --color-cat-mysteries: var(--cat-mysteries);
+  --color-cat-timeline: var(--cat-timeline);
+  --color-cat-map: var(--cat-map);
+  --color-cat-shop: var(--cat-shop);
+  --color-cat-tavern: var(--cat-tavern);
+  --color-cat-danger: var(--cat-danger);
+
+  --font-display: "Cinzel", serif;
+  --font-script: "IM Fell English", serif;
+  --font-body: "Lora", Georgia, serif;
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Investigation board palette */
+  --background: oklch(0.18 0.025 35);
+  --foreground: oklch(0.92 0.04 75);
+  --card: oklch(0.22 0.03 40);
+  --card-foreground: oklch(0.92 0.04 75);
+  --popover: oklch(0.94 0.05 80);
+  --popover-foreground: oklch(0.25 0.04 35);
+  --primary: oklch(0.72 0.13 65);
+  --primary-foreground: oklch(0.18 0.025 35);
+  --secondary: oklch(0.3 0.04 40);
+  --secondary-foreground: oklch(0.92 0.04 75);
+  --muted: oklch(0.28 0.03 40);
+  --muted-foreground: oklch(0.7 0.04 70);
+  --accent: oklch(0.55 0.18 28);
+  --accent-foreground: oklch(0.96 0.03 80);
+  --destructive: oklch(0.5 0.22 25);
+  --destructive-foreground: oklch(0.96 0.03 80);
+  --border: oklch(0.35 0.05 50 / 50%);
+  --input: oklch(0.35 0.05 50 / 50%);
+  --ring: oklch(0.55 0.18 28);
+
+  --parchment: oklch(0.9 0.06 80);
+  --ink: oklch(0.25 0.04 40);
+  --ember: oklch(0.78 0.15 70);
+  --thread: oklch(0.5 0.22 25);
+  --brass: oklch(0.72 0.13 75);
+
+  /* Category colors — vivid, glowing tokens for the HUD medallions */
+  --cat-group: oklch(0.65 0.18 245); /* azul vibrante */
+  --cat-npcs: oklch(0.6 0.2 305); /* roxo místico */
+  --cat-factions: oklch(0.55 0.22 25); /* vermelho-sangue */
+  --cat-regions: oklch(0.55 0.08 200);
+  --cat-quests: oklch(0.75 0.16 75); /* âmbar dourado */
+  --cat-items: oklch(0.6 0.15 150); /* verde esmeralda */
+  --cat-mysteries: oklch(0.58 0.22 315); /* violeta arcano */
+  --cat-timeline: oklch(0.6 0.04 240);
+  --cat-map: oklch(0.72 0.12 230);
+  --cat-shop: oklch(0.68 0.1 100);
+  --cat-tavern: oklch(0.7 0.13 50);
+  --cat-danger: oklch(0.6 0.18 25);
+}
+
+.item-desc :where(li) {
+  font-weight: 700;
+}
+
+@layer utilities {
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .ring-spin {
+    animation: spin-slow 24s linear infinite;
+  }
+
+  @keyframes thread-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  .thread-active {
+    animation: thread-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+}
+
+@layer utilities {
+  .bg-wood {
+    background-image: url("/src/assets/wood-bg.jpg");
+    background-size: cover;
+    background-position: center;
+  }
+
+  .vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 30%, oklch(0.08 0.02 30 / 0.7) 100%);
+  }
+
+  .candle-glow {
+    background: radial-gradient(circle at 50% 50%, oklch(0.85 0.18 75 / 0.18) 0%, transparent 60%);
+  }
+
+  .ink-text {
+    font-family: var(--font-display);
+    letter-spacing: 0.18em;
+    color: oklch(0.25 0.05 35);
+    text-shadow: 0 1px 0 oklch(0.95 0.04 80 / 0.4);
+  }
+
+  .belamar-drawer :where(p, span, label, input, textarea, select, button, li, dt, dd) {
+    font-weight: 400;
+    font-size: calc(0.8em);
+  }
+
+  .belamar-drawer-header :where(p, span, label, input, textarea, select, button, li, dt, dd) {
+    font-weight: 400;
+    font-size: calc(1em + 1px);
+  }
+
+  .thread {
+    stroke: var(--color-thread);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    filter: drop-shadow(0 1px 1px oklch(0 0 0 / 0.5));
+    opacity: 0.75;
+  }
+
+  .pin-shadow {
+    box-shadow:
+      0 2px 4px oklch(0 0 0 / 0.6),
+      inset 0 1px 0 oklch(1 0 0 / 0.2);
+  }
+
+  @keyframes flicker {
+    0%,
+    100% {
+      opacity: 0.92;
+    }
+    45% {
+      opacity: 1;
+    }
+    55% {
+      opacity: 0.85;
+    }
+    70% {
+      opacity: 0.95;
+    }
+  }
+  .flicker {
+    animation: flicker 5s ease-in-out infinite;
+  }
+
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
+  @keyframes marker-pulse {
+    0% {
+      transform: scale(0.6);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
+  @keyframes belamar-pulse {
+    0% {
+      transform: scale(0.55);
+      opacity: 0.95;
+    }
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+
+  @keyframes dust-drift {
+    0% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.55;
+    }
+    90% {
+      opacity: 0.35;
+    }
+    100% {
+      transform: translate3d(20px, -120px, 0);
+      opacity: 0;
+    }
+  }
+  .dust-mote {
+    animation: dust-drift linear infinite;
+  }
+}
+
+@layer utilities {
+  @keyframes belamar-rain {
+    0% { transform: translate3d(0, -10vh, 0); }
+    100% { transform: translate3d(-20px, 115vh, 0); }
+  }
+  .belamar-rain { animation: belamar-rain linear infinite; }
+
+  @keyframes belamar-lightning {
+    0%, 92%, 100% { opacity: 0; }
+    93% { opacity: 0.35; }
+    94% { opacity: 0; }
+    95% { opacity: 0.55; }
+    97% { opacity: 0; }
+  }
+  .belamar-lightning {
+    animation: belamar-lightning 7s ease-out infinite;
+    mix-blend-mode: screen;
+  }
+
+  @keyframes belamar-fog {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(20px, -10px, 0); }
+  }
+  .belamar-fog { animation: belamar-fog 18s ease-in-out infinite; }
+
+  @keyframes belamar-sparkle {
+    0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+    50% { opacity: 0.95; transform: translate3d(0, -8px, 0) scale(1); }
+  }
+  .belamar-sparkle { animation: belamar-sparkle ease-in-out infinite; }
+
+  @keyframes belamar-clouds {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(28px, -6px, 0); }
+  }
+  .belamar-clouds { animation: belamar-clouds 24s ease-in-out infinite; }
+}
+
+@layer utilities {
+  @keyframes d20-spin {
+    0%   { transform: rotateX(15deg) rotateY(0deg); }
+    100% { transform: rotateX(15deg) rotateY(360deg); }
+  }
+  @keyframes d20-tumble {
+    0%   { transform: rotateX(0deg) rotateY(0deg) scale(1); }
+    40%  { transform: rotateX(540deg) rotateY(720deg) scale(1.15); }
+    100% { transform: rotateX(900deg) rotateY(1440deg) scale(1); }
+  }
+  @keyframes d20-pop {
+    0%   { opacity: 0; transform: scale(0.5) translateY(8px); }
+    60%  { opacity: 1; transform: scale(1.15) translateY(-4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+}
