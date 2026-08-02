@@ -21,9 +21,21 @@ function loadJson<T>(key: string, fallback: T): T {
 export function PartyPanel() {
   const { campaignId } = useCampaign();
   const [selected, setSelected] = useState<PartyMember | null>(null);
-  const notes = useDocument(campaignId, "guilda.notes", loadJson(NOTES_KEY, {} as Record<string, string>));
-  const goals = useDocument<string>(campaignId, "guilda.goals", loadJson<string>(GOALS_KEY, ""));
-  const status = useDocument(campaignId, "guilda.status", loadJson(STATUS_KEY, {} as Record<string, string>));
+  const notes = useDocument(
+    campaignId,
+    "guilda.notes",
+    campaignId ? {} : loadJson(NOTES_KEY, {} as Record<string, string>),
+  );
+  const goals = useDocument<string>(
+    campaignId,
+    "guilda.goals",
+    campaignId ? "" : loadJson<string>(GOALS_KEY, ""),
+  );
+  const status = useDocument(
+    campaignId,
+    "guilda.status",
+    campaignId ? {} : loadJson(STATUS_KEY, {} as Record<string, string>),
+  );
 
   if (selected) {
     return (
