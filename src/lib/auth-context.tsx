@@ -23,7 +23,9 @@ type AuthValue = {
   user: User | null;
   loading: boolean;
   displayName: string;
+  isAnonymous: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInAsPlayer: () => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
 };
@@ -59,6 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const signInAsPlayer = useCallback(async () => {
+    const { error } = await supabase.auth.signInAnonymously({
+      options: { data: { display_name: "Jogador" } },
+    });
+    if (error) throw error;
+  }, []);
+
   const signUp = useCallback(
     async (email: string, password: string, name: string): Promise<SignUpResult> => {
       const { data, error } = await supabase.auth.signUp({
@@ -87,12 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user,
       loading,
-      displayName: meta.display_name || meta.name || user?.email || "",
+      displayName: meta.display_name || meta.name || user?.email || "Jogador",
+      isAnonymous: Boolean(user?.is_anonymous),
       signIn,
+      signInAsPlayer,
       signUp,
       signOut,
     };
-  }, [session, loading, signIn, signUp, signOut]);
+  }, [session, loading, signIn, signInAsPlayer, signUp, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
