@@ -32,6 +32,7 @@ export type CampaignMemberRow = {
   campaign_id: string;
   user_id: string;
   role: MemberRole;
+  selected_character_ids: string[];
   joined_at: string;
 };
 

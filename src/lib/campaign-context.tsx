@@ -25,6 +25,7 @@ import { supabase } from "@/lib/supabase";
 export type CampaignMemberView = {
   user_id: string;
   role: MemberRole;
+  selected_character_ids: string[];
   joined_at: string;
   profiles: { display_name: string | null; avatar_url: string | null } | null;
 };

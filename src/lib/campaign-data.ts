@@ -640,13 +640,18 @@ export async function setMyCharacters(campaignId: string, characterIds: string[]
 export async function fetchMembers(campaignId: string) {
   const { data, error } = await db
     .from("campaign_members")
-    .select("user_id,role,joined_at")
+    .select("user_id,role,selected_character_ids,joined_at")
     .eq("campaign_id", campaignId);
   if (error) {
     warn("members:load", error);
     return [];
   }
-  const members = (data ?? []) as { user_id: string; role: MemberRole; joined_at: string }[];
+  const members = (data ?? []) as {
+    user_id: string;
+    role: MemberRole;
+    selected_character_ids: string[];
+    joined_at: string;
+  }[];
   if (!members.length) return [];
   const { data: profiles, error: profileError } = await db
     .from("profiles")

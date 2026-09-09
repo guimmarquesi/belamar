@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 type Mode = "entrar" | "criar";
 
 export function AuthScreen() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signInAsPlayer, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>("entrar");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,6 +44,19 @@ export function AuthScreen() {
   };
 
   const disabled = busy || !email.trim() || password.length < 6 || (mode === "criar" && !name.trim());
+
+  const enterAsPlayer = async () => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await signInAsPlayer();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível entrar como jogador.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div
@@ -84,7 +97,25 @@ export function AuthScreen() {
           </div>
         </div>
 
-        <div className="mt-5 flex rounded border border-[var(--color-ink)]/20 bg-[oklch(0.98_0.02_80)]/60 p-0.5">
+        <button
+          disabled={busy}
+          onClick={() => void enterAsPlayer()}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-4 py-3 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.22em] text-[oklch(0.96_0.04_80)] disabled:opacity-40"
+        >
+          {busy && <Loader2 className="size-3.5 animate-spin" />}
+          Entrar como jogador
+        </button>
+        <p className="mt-2 text-center text-[12px] text-[var(--color-ink)]/65">
+          Sem cadastro: escolha seu personagem na próxima tela.
+        </p>
+
+        <div className="my-4 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-[var(--color-ink)]/45">
+          <span className="h-px flex-1 bg-[var(--color-ink)]/15" />
+          Conta do Mestre
+          <span className="h-px flex-1 bg-[var(--color-ink)]/15" />
+        </div>
+
+        <div className="flex rounded border border-[var(--color-ink)]/20 bg-[oklch(0.98_0.02_80)]/60 p-0.5">
           {(["entrar", "criar"] as Mode[]).map((m) => (
             <button
               key={m}
