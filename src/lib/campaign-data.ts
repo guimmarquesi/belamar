@@ -12,12 +12,17 @@ function warn(scope: string, error: unknown) {
   if (error) console.warn(`[belamar:${scope}]`, error);
 }
 
-function useRealtimeReload(table: string, campaignId: string | null, reload: () => Promise<void>) {
+function useRealtimeReload(
+  table: string,
+  campaignId: string | null,
+  reload: () => Promise<void>,
+  subscriptionKey = table,
+) {
   useEffect(() => {
     if (!campaignId) return;
 
     let channel: RealtimeChannel | null = db
-      .channel(`belamar:${table}:${campaignId}`)
+      .channel(`belamar:${table}:${campaignId}:${subscriptionKey}`)
       .on(
         "postgres_changes",
         {
@@ -34,7 +39,7 @@ function useRealtimeReload(table: string, campaignId: string | null, reload: () 
       if (channel) void db.removeChannel(channel);
       channel = null;
     };
-  }, [campaignId, reload, table]);
+  }, [campaignId, reload, subscriptionKey, table]);
 }
 
 function useDebouncedRemotePersist<T>(
@@ -416,7 +421,7 @@ export function useDocument<T>(campaignId: string | null, key: string, fallback:
   useEffect(() => {
     if (campaignId) void reload();
   }, [campaignId, reload]);
-  useRealtimeReload("campaign_documents", campaignId, reload);
+  useRealtimeReload("campaign_documents", campaignId, reload, key);
 
   const sync = useCallback(
     async (next: T) => {
