@@ -7,7 +7,6 @@ import {
   Loader2,
   LogOut,
   Settings,
-  Shield,
   Upload,
   UserPlus,
   Users,
@@ -58,7 +57,6 @@ function FullscreenLoading({ label = "Abrindo a crônica..." }: { label?: string
 function CampaignOnboarding() {
   const { joinOpenCampaign, error } = useCampaign();
   const [campaign, setCampaign] = useState<Awaited<ReturnType<typeof fetchOpenCampaigns>>[number] | null>(null);
-  const [role, setRole] = useState<"master" | "player">("player");
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -78,7 +76,7 @@ function CampaignOnboarding() {
     setBusy(true);
     setLocalError(null);
     try {
-      await joinOpenCampaign(campaign.campaign.id, role, selected);
+      await joinOpenCampaign(campaign.campaign.id, "player", selected);
     } catch (cause) {
       setLocalError(cause instanceof Error ? cause.message : "Não foi possível entrar.");
     } finally {
@@ -108,42 +106,29 @@ function CampaignOnboarding() {
           boxShadow: "0 28px 70px oklch(0 0 0 / 0.72)",
         }}
       >
-        <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[0.24em]">ENTRAR EM BELAMAR</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[0.24em]">ESCOLHA SEU PERSONAGEM</h1>
         <p className="mt-1 font-[family-name:var(--font-script)] italic text-[var(--color-ink)]/70">
-          Escolha como vai participar e vincule seus personagens da Guilda.
+          Você entrará na campanha como Jogador, sem precisar criar uma conta.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          {(["player", "master"] as const).map((option) => (
-            <button key={option} onClick={() => setRole(option)} className={`rounded border p-4 text-left transition ${role === option ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-[oklch(0.96_0.04_80)]" : "border-[var(--color-ink)]/20 bg-[oklch(0.96_0.04_80)]/45"}`}>
-              <span className="flex items-center gap-2 font-[family-name:var(--font-display)] text-[11px] uppercase tracking-[0.2em]">
-                {option === "master" ? <Shield className="size-4" /> : <Users className="size-4" />}
-                {option === "master" ? "Sou Mestre" : "Sou Jogador"}
-              </span>
-              <span className="mt-2 block text-xs opacity-70">{option === "master" ? "Pode ajudar a editar a campanha." : "Participa com seus personagens."}</span>
-            </button>
-          ))}
-        </div>
-
-        <p className="mt-5 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.2em]">Meus personagens (pode escolher mais de um)</p>
+        <p className="mt-6 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.2em]">Meu personagem</p>
         {loading ? <div className="mt-4 flex items-center gap-2 text-sm"><Loader2 className="size-4 animate-spin" /> Abrindo a Guilda...</div> : (
           <div className="mt-3 grid max-h-60 gap-2 overflow-auto sm:grid-cols-2">
             {campaign?.characters.map((character) => {
               const member = guildaMember(character);
-              const unavailable = Boolean(character.owner_id);
               const checked = selected.includes(character.id);
-              return <button key={character.id} type="button" disabled={unavailable} onClick={() => setSelected((current) => checked ? current.filter((id) => id !== character.id) : [...current, character.id])} className={`flex items-center gap-3 rounded border p-2 text-left ${checked ? "border-[var(--color-ink)] bg-[var(--color-ink)]/10" : "border-[var(--color-ink)]/20"} disabled:opacity-45`}>
+              return <button key={character.id} type="button" onClick={() => setSelected(checked ? [] : [character.id])} className={`flex items-center gap-3 rounded border p-2 text-left ${checked ? "border-[var(--color-ink)] bg-[var(--color-ink)]/10" : "border-[var(--color-ink)]/20"}`}>
                 {member?.portrait ? <img src={member.portrait} alt="" className="size-10 rounded-full object-cover" /> : <span className="flex size-10 items-center justify-center rounded-full bg-black/10">{character.name[0]}</span>}
-                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{character.name}</strong><small className="block truncate opacity-60">{unavailable ? "Já vinculado" : member?.classLine ?? "Guilda"}</small></span>
+                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{character.name}</strong><small className="block truncate opacity-60">{member?.classLine ?? "Guilda"}</small></span>
                 {checked && <Check className="size-4" />}
               </button>;
             })}
           </div>
         )}
 
-        <button onClick={() => void run()} disabled={busy || loading || !campaign} className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 py-3 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.22em] text-[oklch(0.96_0.04_80)] disabled:opacity-50">
+        <button onClick={() => void run()} disabled={busy || loading || !campaign || selected.length === 0} className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-3 py-3 font-[family-name:var(--font-display)] text-[10px] uppercase tracking-[0.22em] text-[oklch(0.96_0.04_80)] disabled:opacity-50">
           {busy ? <Loader2 className="size-3.5 animate-spin" /> : <DoorOpen className="size-3.5" />}
-          Entrar como {role === "master" ? "Mestre" : "Jogador"}
+          Entrar como Jogador
         </button>
 
         {(localError || error) && (
@@ -168,7 +153,7 @@ function copyText(text: string) {
 }
 
 function AccountPanel() {
-  const { user, displayName, signOut } = useAuth();
+  const { user, displayName, isAnonymous, signOut } = useAuth();
   const {
     campaign,
     campaignId,
@@ -197,12 +182,17 @@ function AccountPanel() {
       .then((rows) => {
         if (!alive) return;
         setCharacters(rows);
-        setSelectedCharacters(rows.filter((character) => character.owner_id === user.id).map((character) => character.id));
+        const membership = members.find((member) => member.user_id === user.id);
+        setSelectedCharacters(
+          membership?.selected_character_ids?.length
+            ? membership.selected_character_ids
+            : rows.filter((character) => character.owner_id === user.id).map((character) => character.id),
+        );
       })
       .catch((cause) => { if (alive) setError(cause instanceof Error ? cause.message : "Não foi possível carregar os personagens."); })
       .finally(() => { if (alive) setCharactersBusy(false); });
     return () => { alive = false; };
-  }, [open, campaignId, user]);
+  }, [open, campaignId, user, members]);
 
   const saveCharacters = async () => {
     if (!campaignId) return;
@@ -212,7 +202,7 @@ function AccountPanel() {
     try {
       await setMyCharacters(campaignId, selectedCharacters);
       setCharacters(await fetchCampaignCharacters(campaignId));
-      setCharactersNotice("Personagens vinculados à sua conta.");
+      setCharactersNotice(isAnonymous ? "Personagem escolhido para esta sessão." : "Personagem vinculado à sua conta.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível vincular os personagens.");
     } finally {
@@ -306,25 +296,24 @@ function AccountPanel() {
 
           <div className="mt-4 rounded border border-[var(--color-ink)]/15 bg-[oklch(0.96_0.04_80)]/40 p-3">
             <p className="font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.2em]">Meus personagens</p>
-            <p className="mt-1 text-[11px] opacity-60">Escolha um ou vários personagens da Guilda.</p>
+            <p className="mt-1 text-[11px] opacity-60">Escolha um personagem da Guilda.</p>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
               {characters.map((character) => {
-                const unavailable = Boolean(character.owner_id && character.owner_id !== user?.id);
                 const checked = selectedCharacters.includes(character.id);
                 return (
-                  <label key={character.id} className={`flex items-center gap-2 rounded border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs ${unavailable ? "opacity-40" : "cursor-pointer"}`}>
+                  <label key={character.id} className="flex cursor-pointer items-center gap-2 rounded border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs">
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={unavailable || charactersBusy}
-                      onChange={() => setSelectedCharacters((current) => checked ? current.filter((id) => id !== character.id) : [...current, character.id])}
+                      disabled={charactersBusy}
+                      onChange={() => setSelectedCharacters(checked ? [] : [character.id])}
                     />
                     <span className="truncate">{character.name}</span>
                   </label>
                 );
               })}
             </div>
-            <button onClick={() => void saveCharacters()} disabled={charactersBusy} className="mt-2 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-2 py-1.5 text-[10px] uppercase text-[oklch(0.96_0.04_80)] disabled:opacity-50">
+            <button onClick={() => void saveCharacters()} disabled={charactersBusy || selectedCharacters.length !== 1} className="mt-2 flex w-full items-center justify-center gap-2 rounded bg-[var(--color-ink)] px-2 py-1.5 text-[10px] uppercase text-[oklch(0.96_0.04_80)] disabled:opacity-50">
               {charactersBusy && <Loader2 className="size-3 animate-spin" />} Salvar personagens
             </button>
             {charactersNotice && <p className="mt-2 text-xs text-emerald-900">{charactersNotice}</p>}
@@ -393,7 +382,7 @@ function AccountPanel() {
             onClick={() => void signOut()}
             className="mt-3 flex w-full items-center justify-center gap-2 border-t border-[var(--color-ink)]/15 pt-3 text-xs text-[var(--color-ink)]/70 hover:text-[var(--color-ink)]"
           >
-            <LogOut className="size-3.5" /> Sair da conta
+            <LogOut className="size-3.5" /> {isAnonymous ? "Trocar jogador" : "Sair da conta"}
           </button>
         </div>
       )}
